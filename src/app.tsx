@@ -1,9 +1,8 @@
 import { Hono } from 'hono'
-import { serveStatic } from '@hono/node-server/serve-static'
 import { bodyLimit } from 'hono/body-limit'
 import { compress } from 'hono/compress'
-import path from 'node:path'
 import { env } from './config/env.js'
+import { isWorkers } from './config/runtime.js'
 import { type AppEnv, baseMiddleware, pageCtx } from './http/common.js'
 import { publicRoutes } from './http/public.js'
 import { seoRoutes } from './http/seo.js'
@@ -11,37 +10,37 @@ import { admin } from './http/admin.js'
 import { NotFoundPage, ErrorPage } from './views/pages/misc.js'
 import { log, errorDetails } from './lib/logger.js'
 import { sql } from './db/client.js'
+import { R2Storage, getStorage } from './lib/storage.js'
 
-export function createApp() {
+export interface AppOptions {
+  /** Registers static file routes (Node only; Cloudflare Pages serves static files itself). */
+  mountStatic?: (app: Hono<AppEnv>) => void
+}
+
+export function createApp(opts: AppOptions = {}) {
   const app = new Hono<AppEnv>()
 
   app.use('*', baseMiddleware)
-  app.use('*', compress())
+  // Cloudflare compresses responses at the edge; Node compresses here.
+  if (!isWorkers) app.use('*', compress())
+  opts.mountStatic?.(app)
 
-  // Long-cached static files. Asset names contain a content hash.
-  app.use('/assets/*', async (c, next) => {
-    await next()
-    if (c.res.status === 200) c.header('Cache-Control', 'public, max-age=31536000, immutable')
-  })
-  app.use('/fonts/*', async (c, next) => {
-    await next()
-    if (c.res.status === 200) c.header('Cache-Control', 'public, max-age=31536000, immutable')
-  })
-  app.use('/assets/*', serveStatic({ root: './public' }))
-  app.use('/fonts/*', serveStatic({ root: './public' }))
-  app.get('/favicon.svg', serveStatic({ path: './public/favicon.svg' }))
-  app.get('/favicon.ico', serveStatic({ path: './public/favicon.svg' }))
-  app.get('/og-default.png', serveStatic({ path: './public/og-default.png' }))
-  if (env.STORAGE_DRIVER === 'local') {
-    const root = path.relative(process.cwd(), path.resolve(env.LOCAL_STORAGE_DIR)) || '.'
-    app.use('/uploads/*', async (c, next) => {
-      await next()
-      if (c.res.status === 200) {
-        c.header('Cache-Control', 'public, max-age=31536000, immutable')
-        c.header('X-Content-Type-Options', 'nosniff')
-      }
+  // Photos stored in R2 are served through the app (no public bucket needed).
+  if (env.STORAGE_DRIVER === 'r2') {
+    app.get('/uploads/*', async (c) => {
+      const key = c.req.path.replace(/^\/uploads\//, '')
+      if (!/^[a-z0-9][a-z0-9/_.-]{0,200}$/.test(key) || key.includes('..')) return c.notFound()
+      const obj = await (getStorage() as R2Storage).get(key)
+      if (!obj) return c.notFound()
+      return new Response(obj.body, {
+        headers: {
+          'Content-Type': obj.httpMetadata?.contentType ?? 'application/octet-stream',
+          'Cache-Control': 'public, max-age=31536000, immutable',
+          'X-Content-Type-Options': 'nosniff',
+          ...(obj.httpEtag ? { ETag: obj.httpEtag } : {}),
+        },
+      })
     })
-    app.use('/uploads/*', serveStatic({ root, rewriteRequestPath: (p) => p.replace(/^\/uploads/, '') }))
   }
 
   app.get('/healthz', async (c) => {

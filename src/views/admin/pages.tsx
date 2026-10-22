@@ -423,7 +423,7 @@ export function VehicleFormPage({
             <section class="rounded-xl border border-line bg-paper p-5">
               <h2 class="font-bold">الصور</h2>
               <p class="mt-1 text-xs leading-5 text-sage">الصورة الأولى هي الرئيسية. يتم ضغط الصور وحذف بيانات الموقع الجغرافي منها تلقائياً.</p>
-              <form method="post" action={`/admin/vehicles/${vehicle.id}/images`} enctype="multipart/form-data" class="mt-4 space-y-3">
+              <form method="post" action={`/admin/vehicles/${vehicle.id}/images`} enctype="multipart/form-data" class="mt-4 space-y-3" data-resize-upload>
                 <Csrf ctx={ctx} />
                 <input type="file" name="photos" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,image/avif" multiple required class="block w-full text-sm file:me-3 file:rounded-full file:border-0 file:bg-petrol-900 file:px-4 file:py-2 file:text-paper" />
                 <button class="btn btn-ghost btn-sm w-full">رفع الصور</button>

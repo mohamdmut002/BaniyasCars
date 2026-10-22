@@ -307,15 +307,18 @@ admin.post('/vehicles/:id/images', async (c) => {
   if (!v) return c.notFound()
   const body = await c.req.parseBody({ all: true })
   const files = ([] as unknown[]).concat(body.photos ?? []).filter((f): f is File => f instanceof File && f.size > 0)
+  // The dashboard script sends a browser-made thumbnail for each photo, in the same order.
+  const thumbs = ([] as unknown[]).concat(body.thumbs ?? []).map((f) => (f instanceof File && f.size > 0 ? f : null))
   const max = env.MAX_UPLOAD_MB * 1024 * 1024
   let failed = 0
-  for (const f of files.slice(0, 30)) {
+  for (const [i, f] of files.slice(0, 30).entries()) {
     if (f.size > max) {
       failed++
       continue
     }
     try {
-      const stored = await processAndStore(Buffer.from(await f.arrayBuffer()), v.slug)
+      const t = thumbs[i]
+      const stored = await processAndStore(Buffer.from(await f.arrayBuffer()), v.slug, t && t.size < max ? Buffer.from(await t.arrayBuffer()) : null)
       await addImage(v.id, { ...stored, source: 'upload' })
     } catch (e) {
       failed++

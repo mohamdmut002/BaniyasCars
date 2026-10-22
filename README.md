@@ -12,10 +12,10 @@ Arabic-first website and inventory dashboard for Baniyas Cars (Bani Yas Cars Est
 
 | Layer | Choice |
 |---|---|
-| Server | Node.js 20+, TypeScript, [Hono](https://hono.dev) with server-rendered JSX |
+| Server | TypeScript and [Hono](https://hono.dev) with server-rendered JSX. Runs on Node.js 20+ (`src/server.ts`) or Cloudflare Pages Functions (`src/worker.ts`) |
 | Styling | Tailwind CSS v4 (built by `scripts/build-assets.mjs`), self-hosted IBM Plex Sans Arabic + Reem Kufi (OFL) |
 | Database | PostgreSQL (Supabase, Neon, Railway or self-hosted) via [postgres.js](https://github.com/porsager/postgres); SQL migrations in `src/db/migrations` |
-| Photos | `sharp` (validate, rotate, strip GPS, WebP 1600 px + 640 px thumbnails) to local disk or any S3-compatible bucket (Supabase Storage, Cloudflare R2) |
+| Photos | WebP 1600 px + 640 px thumbnails, location data removed. On Node, `sharp` processes uploads; on Cloudflare the dashboard resizes in the browser. Stored on local disk, an S3-compatible bucket, or an R2 binding |
 | Client JS | ~3 KB of progressive enhancement (gallery, share, auto-submit filters). Every page and filter works without JavaScript. |
 
 **Why not Next.js?** The brief preferred Next.js "if supported by the current environment". The build environment blocked the npm registry, so Next.js could not be installed, run or tested there. Hono runs anywhere Node runs, has a much smaller footprint, server-renders every page (good for SEO and Core Web Vitals) and was fully tested here against a real PostgreSQL database. Pages, data access and validation are kept in separate modules (`src/views`, `src/repo`, `src/domain`) so a later move to another framework reuses most of the code.
@@ -75,7 +75,9 @@ See [docs/TEST-REPORT.md](docs/TEST-REPORT.md) for what was run and what is stil
 
 ## Deploy (low cost)
 
-Recommended free-tier setup: **Render** (web service) + **Supabase** (PostgreSQL + photo storage).
+**Cloudflare Pages:** follow [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) (`npm run build:pages` / `npm run deploy:pages`, PostgreSQL through Hyperdrive, photos in R2).
+
+**Any Node host:** for example **Render** (web service) + **Supabase** (PostgreSQL + photo storage):
 
 1. **Supabase**: create a project in a nearby region. Copy the *Session pooler* connection string (port 5432). In Storage, create a **public** bucket named `vehicles`, then create S3 access keys (Project Settings → Storage).
 2. **Load data** from your computer once: set `DATABASE_URL` (and `DATABASE_SSL=require`) in `.env`, then `npm run db:seed` and `npm run admin:create -- --email … --role owner`.
@@ -111,7 +113,7 @@ If the dealership later wants Instagram posts to appear automatically, the next 
 
 ## Security notes
 
-- Passwords: scrypt; 5 failed attempts lock an account for 15 minutes; per-IP login rate limit.
+- Passwords: PBKDF2-SHA256 (100,000 iterations, Web Crypto); 5 failed attempts lock an account for 15 minutes; per-IP login rate limit.
 - Sessions: random 256-bit token in an HttpOnly, SameSite=Lax (Secure in production) cookie; only a SHA-256 hash is stored. Password change signs out other devices.
 - Every dashboard POST needs a per-session CSRF token and a same-origin `Origin`/`Referer`.
 - Roles: owner (everything) and staff (cars, offers, enquiries, import/export).

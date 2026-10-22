@@ -17,7 +17,10 @@
     "inventory:build": "tsx scripts/build-inventory.ts",
     "images:localize": "tsx scripts/localize-images.ts",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts"
+    "test": "tsx --test tests/*.test.ts",
+    "build:pages": "node scripts/build-pages.mjs",
+    "deploy:pages": "node scripts/build-pages.mjs && wrangler pages deploy",
+    "preview:pages": "node scripts/build-pages.mjs && wrangler pages dev"
   },
   "dependencies": {
     "@hono/node-server": "^1.19.17",
@@ -31,6 +34,7 @@
     "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.12",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "wrangler": "^4.40.0"
   }
 }

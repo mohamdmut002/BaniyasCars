@@ -20,7 +20,9 @@ const uploadDir = await mkdtemp(path.join(tmpdir(), 'baniyas-uploads-'))
 process.env.LOCAL_STORAGE_DIR = uploadDir
 process.env.STORAGE_DRIVER = 'local'
 
-const ORIGIN = 'http://localhost:3000'
+// Set TEST_BASE_URL to run the same tests over HTTP against a running server (e.g. workerd with the Pages build).
+const BASE = process.env.TEST_BASE_URL?.replace(/\/+$/, '')
+const ORIGIN = BASE ?? 'http://localhost:3000'
 let app: { request: (input: string, init?: RequestInit) => Response | Promise<Response> }
 let sql: any
 
@@ -34,8 +36,13 @@ before(async () => {
   const { createAdmin } = await import('../src/lib/auth.js')
   await createAdmin('owner@test.local', 'Owner', 'OwnerPass2026', 'owner')
   await createAdmin('staff@test.local', 'Staff', 'StaffPass2026', 'staff')
+  if (BASE) {
+    app = { request: (input, init) => fetch(input, { ...init, redirect: 'manual' }) }
+    return
+  }
   const { createApp } = await import('../src/app.js')
-  app = createApp()
+  const { mountNodeStatic } = await import('../src/http/node-static.js')
+  app = createApp({ mountStatic: mountNodeStatic })
 })
 
 after(async () => {
@@ -46,7 +53,7 @@ const get = (p: string, cookie?: string) => app.request(`${ORIGIN}${p}`, { heade
 const post = (p: string, body: Record<string, string> | FormData, cookie?: string, origin = ORIGIN) =>
   app.request(`${ORIGIN}${p}`, {
     method: 'POST',
-    headers: { ...(cookie ? { cookie } : {}), ...(origin ? { origin } : {}), host: 'localhost:3000' },
+    headers: { ...(cookie ? { cookie } : {}), ...(origin ? { origin } : {}), ...(BASE ? {} : { host: 'localhost:3000' }) },
     body: body instanceof FormData ? body : new URLSearchParams(body),
   })
 
@@ -125,8 +132,8 @@ test('unknown car returns a 404 page', { skip }, async () => {
 
 test('sitemap and robots are generated', { skip }, async () => {
   const xml = await (await get('/sitemap.xml')).text()
-  assert.match(xml, /<loc>http:\/\/localhost:3000\/cars\/nissan-patrol-le-t2-2026-275740<\/loc>/)
-  assert.match(xml, /<loc>http:\/\/localhost:3000\/en\/cars\/nissan-patrol-le-t2-2026-275740<\/loc>/)
+  assert.ok(xml.includes(`<loc>${ORIGIN}/cars/nissan-patrol-le-t2-2026-275740</loc>`))
+  assert.ok(xml.includes(`<loc>${ORIGIN}/en/cars/nissan-patrol-le-t2-2026-275740</loc>`))
   assert.match(await (await get('/robots.txt')).text(), /Disallow: \/admin/)
 })
 
@@ -187,10 +194,14 @@ test('admin can create, edit, sell and delete a vehicle, and the site follows', 
   assert.match(up.headers.get('location')!, /m=upload_error/) // the fake image is rejected
   const imgs = await sql`select url, storage_key from vehicle_images where vehicle_id = ${id}`
   assert.equal(imgs.length, 1)
-  const files = await readdir(path.join(uploadDir, path.dirname(imgs[0].storage_key)))
-  assert.equal(files.length, 2) // large + thumbnail
+  if (!BASE) {
+    const files = await readdir(path.join(uploadDir, path.dirname(imgs[0].storage_key)))
+    assert.equal(files.length, 2) // large + thumbnail
+  }
   const served = await get(imgs[0].url)
   assert.equal(served.status, 200)
+  assert.match(served.headers.get('content-type')!, /^image\//)
+  assert.equal((await get(imgs[0].url.replace(/(\.\w+)$/, '-640$1'))).status, 200)
 
   // Mark as sold: leaves the listing, page still resolves with a sold notice
   await post(`/admin/vehicles/${id}/status`, { _csrf: csrf, status: 'sold' }, cookie)

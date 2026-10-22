@@ -2,6 +2,7 @@ import type { VehicleWithImages } from '../../domain/vehicle.js'
 import { t } from '../../i18n/index.js'
 import { colorName, makeName, modelName, vehicleTitle } from '../../domain/names.js'
 import { describeAr, describeEn } from '../../lib/describe.js'
+import { thumbUrl } from '../../lib/images.js'
 import { displayPhone, formatDate, formatMileage, telHref } from '../../lib/format.js'
 import { vehicleWhatsappText, whatsappLink } from '../../lib/whatsapp.js'
 import { Layout } from '../layout.js'
@@ -140,7 +141,7 @@ export function VehiclePage({
                   {v.images.map((img, i) => (
                     <li class="shrink-0">
                       <button type="button" data-thumb={i} aria-current={i === 0 ? 'true' : undefined} class="block h-16 w-14 overflow-hidden rounded-md opacity-60 ring-2 ring-transparent aria-[current=true]:opacity-100 aria-[current=true]:ring-petrol-900 sm:h-20 sm:w-16" aria-label={L.car.photoOf(i + 1, v.images.length)}>
-                        <img src={img.storage_key ? img.url.replace(/\.webp$/, '-640.webp') : img.url} alt="" loading="lazy" referrerpolicy="no-referrer" class="h-full w-full object-cover" />
+                        <img src={thumbUrl(img)} alt="" loading="lazy" referrerpolicy="no-referrer" class="h-full w-full object-cover" />
                       </button>
                     </li>
                   ))}

@@ -6,8 +6,8 @@ const threshold = order[(process.env.LOG_LEVEL as Level) ?? 'info'] ?? 20
 function write(level: Level, msg: string, data?: Record<string, unknown>) {
   if (order[level] < threshold || process.env.NODE_ENV === 'test') return
   const line = JSON.stringify({ t: new Date().toISOString(), level, msg, ...data })
-  if (level === 'error' || level === 'warn') process.stderr.write(line + '\n')
-  else process.stdout.write(line + '\n')
+  if (level === 'error' || level === 'warn') console.error(line)
+  else console.log(line)
 }
 
 export const log = {

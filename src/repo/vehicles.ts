@@ -58,10 +58,10 @@ export function parseFilters(params: URLSearchParams): VehicleFilters {
 }
 
 /** Public listing: available and reserved cars that are not historical. */
-const PUBLIC = sql`v.status in ('available', 'reserved') and v.verification <> 'historical'`
+const PUBLIC = () => sql`v.status in ('available', 'reserved') and v.verification <> 'historical'`
 
 function whereClause(f: VehicleFilters) {
-  const parts = [PUBLIC]
+  const parts = [PUBLIC()]
   if (f.q) {
     const tokens = translateQuery(f.q)
       .split(' ')
@@ -135,7 +135,7 @@ export async function searchVehicles(f: VehicleFilters) {
 export async function featuredVehicles(limit = 8) {
   const rows = await sql<Vehicle[]>`
     select v.* from vehicles v
-    where ${PUBLIC} and v.featured and exists (select 1 from vehicle_images i where i.vehicle_id = v.id)
+    where ${PUBLIC()} and v.featured and exists (select 1 from vehicle_images i where i.vehicle_id = v.id)
     order by v.featured_rank nulls last, v.updated_at desc limit ${limit}`
   return attach(rows)
 }
@@ -143,7 +143,7 @@ export async function featuredVehicles(limit = 8) {
 export async function recentVehicles(limit = 8, excludeIds: string[] = []) {
   const rows = await sql<Vehicle[]>`
     select v.* from vehicles v
-    where ${PUBLIC} and v.verification = 'confirmed' and not (v.id = any(${excludeIds}))
+    where ${PUBLIC()} and v.verification = 'confirmed' and not (v.id = any(${excludeIds}))
     order by coalesce(v.listed_at, v.created_at) desc limit ${limit}`
   return attach(rows)
 }
@@ -151,12 +151,12 @@ export async function recentVehicles(limit = 8, excludeIds: string[] = []) {
 export async function brandCounts() {
   return sql<{ make: string; count: number; min_price: number | null }[]>`
     select v.make, count(*)::int as count, min(v.price_aed)::int as min_price
-    from vehicles v where ${PUBLIC} group by v.make order by count(*) desc, v.make`
+    from vehicles v where ${PUBLIC()} group by v.make order by count(*) desc, v.make`
 }
 
 export async function modelsByMake() {
   return sql<{ make: string; model: string; count: number }[]>`
-    select v.make, v.model, count(*)::int as count from vehicles v where ${PUBLIC}
+    select v.make, v.model, count(*)::int as count from vehicles v where ${PUBLIC()}
     group by v.make, v.model order by v.make, v.model`
 }
 
@@ -169,7 +169,7 @@ export const PRICE_BANDS = [
 ] as const
 
 export async function priceBandCounts() {
-  const rows = await sql<{ price_aed: number }[]>`select v.price_aed from vehicles v where ${PUBLIC} and v.price_aed is not null`
+  const rows = await sql<{ price_aed: number }[]>`select v.price_aed from vehicles v where ${PUBLIC()} and v.price_aed is not null`
   return PRICE_BANDS.map((b) => ({
     ...b,
     count: rows.filter((r) => (b.min == null || r.price_aed >= b.min) && (b.max == null || r.price_aed <= b.max)).length,
@@ -178,7 +178,7 @@ export async function priceBandCounts() {
 
 export async function inventoryStats() {
   const [s] = await sql<{ total: number; year_min: number; year_max: number }[]>`
-    select count(*)::int as total, min(year)::int as year_min, max(year)::int as year_max from vehicles v where ${PUBLIC}`
+    select count(*)::int as total, min(year)::int as year_min, max(year)::int as year_max from vehicles v where ${PUBLIC()}`
   return s ?? { total: 0, year_min: 0, year_max: 0 }
 }
 
@@ -203,7 +203,7 @@ export async function similarVehicles(v: Vehicle, limit = 4) {
 
 export async function sitemapVehicles() {
   return sql<{ slug: string; updated_at: Date }[]>`
-    select slug, updated_at from vehicles v where ${PUBLIC} order by updated_at desc`
+    select slug, updated_at from vehicles v where ${PUBLIC()} order by updated_at desc`
 }
 
 /* ------------------------------ admin ------------------------------ */

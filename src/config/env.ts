@@ -1,8 +1,14 @@
-import { existsSync } from 'node:fs'
 import { z } from 'zod'
+import { isWorkers } from './runtime.js'
 
-// Load .env for local runs. Hosting platforms inject real environment variables instead.
-if (existsSync('.env') && typeof process.loadEnvFile === 'function') process.loadEnvFile('.env')
+// Load .env for local Node runs. Hosting platforms (and Cloudflare bindings) provide real variables instead.
+if (!isWorkers && typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile('.env')
+  } catch {
+    /* no .env file */
+  }
+}
 
 const bool = z
   .enum(['true', 'false', '1', '0'])
@@ -19,8 +25,8 @@ const schema = z.object({
   DATABASE_SSL: z.enum(['disable', 'require']).default('disable'),
   /** Secret used to sign cookies and hash inquiry IPs. At least 32 random characters. */
   SESSION_SECRET: z.string().min(32, 'SESSION_SECRET must be at least 32 characters'),
-  /** Where uploaded photos go: "local" (disk, for a VPS) or "s3" (Supabase Storage, Cloudflare R2, AWS S3). */
-  STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
+  /** Where uploaded photos go: "local" (disk, for a VPS), "s3" (Supabase Storage, R2 or AWS via S3 API) or "r2" (R2 binding on Cloudflare Pages). */
+  STORAGE_DRIVER: z.enum(['local', 's3', 'r2']).default('local'),
   LOCAL_STORAGE_DIR: z.string().default('./storage/uploads'),
   S3_ENDPOINT: z.string().url().optional(),
   S3_REGION: z.string().default('auto'),
@@ -28,7 +34,11 @@ const schema = z.object({
   S3_ACCESS_KEY_ID: z.string().optional(),
   S3_SECRET_ACCESS_KEY: z.string().optional(),
   /** Public base URL for files in the bucket, e.g. https://<project>.supabase.co/storage/v1/object/public/vehicles */
-  S3_PUBLIC_BASE_URL: z.string().url().optional(),
+  // A full URL, or "/uploads" when the files live in the R2 bucket that the Cloudflare site serves itself.
+  S3_PUBLIC_BASE_URL: z
+    .string()
+    .refine((v) => v.startsWith('/') || /^https?:\/\//.test(v), 'must be a full URL or a path such as /uploads')
+    .optional(),
   S3_FORCE_PATH_STYLE: bool,
   MAX_UPLOAD_MB: z.coerce.number().positive().max(25).default(10),
   /** Trust X-Forwarded-* headers from the hosting proxy (Render, Railway, Fly, Vercel). */

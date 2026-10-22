@@ -1,33 +1,48 @@
-import { createHash, createHmac, randomBytes, scrypt as scryptCb, timingSafeEqual } from 'node:crypto'
-import { promisify } from 'node:util'
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { sql } from '../db/client.js'
 import { env } from '../config/env.js'
 
-const scrypt = promisify(scryptCb) as (pw: string, salt: Buffer, keylen: number, opts: { N: number; r: number; p: number; maxmem: number }) => Promise<Buffer>
+/*
+ * Passwords use PBKDF2-SHA256 through Web Crypto, which is available on both Node and Cloudflare Workers.
+ * 100,000 iterations is the most Workers allows. Older scrypt hashes (created before the Cloudflare
+ * version) are still accepted on Node and re-hashed on the next successful login.
+ */
+const ITERATIONS = 100_000
+const KEYLEN = 32
 
-const N = 2 ** 15
-const R = 8
-const P = 1
-const KEYLEN = 64
+async function pbkdf2(password: string, salt: Uint8Array<ArrayBuffer>, iterations: number, length: number): Promise<Buffer> {
+  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(password.normalize('NFKC')), 'PBKDF2', false, ['deriveBits'])
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt, iterations }, key, length * 8)
+  return Buffer.from(bits)
+}
 
-/** scrypt password hash in the form scrypt$N$r$p$salt$hash (base64). */
+/** Password hash in the form pbkdf2-sha256$iterations$salt$hash (base64). */
 export async function hashPassword(password: string): Promise<string> {
   const salt = randomBytes(16)
-  const key = await scrypt(password.normalize('NFKC'), salt, KEYLEN, { N, r: R, p: P, maxmem: 64 * 1024 * 1024 })
-  return ['scrypt', N, R, P, salt.toString('base64'), key.toString('base64')].join('$')
+  const key = await pbkdf2(password, new Uint8Array(salt), ITERATIONS, KEYLEN)
+  return ['pbkdf2-sha256', ITERATIONS, salt.toString('base64'), key.toString('base64')].join('$')
 }
 
 export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [alg, n, r, p, saltB64, hashB64] = stored.split('$')
-  if (alg !== 'scrypt' || !saltB64 || !hashB64) return false
-  const expected = Buffer.from(hashB64, 'base64')
-  const key = await scrypt(password.normalize('NFKC'), Buffer.from(saltB64, 'base64'), expected.length, {
-    N: Number(n),
-    r: Number(r),
-    p: Number(p),
-    maxmem: 64 * 1024 * 1024,
-  })
-  return key.length === expected.length && timingSafeEqual(key, expected)
+  const parts = stored.split('$')
+  if (parts[0] === 'pbkdf2-sha256' && parts.length === 4) {
+    const expected = Buffer.from(parts[3]!, 'base64')
+    const key = await pbkdf2(password, new Uint8Array(Buffer.from(parts[2]!, 'base64')), Number(parts[1]), expected.length)
+    return key.length === expected.length && timingSafeEqual(key, expected)
+  }
+  if (parts[0] === 'scrypt' && parts.length === 6) {
+    try {
+      const { scrypt } = await import('node:crypto')
+      const expected = Buffer.from(parts[5]!, 'base64')
+      const key = await new Promise<Buffer>((resolve, reject) =>
+        scrypt(password.normalize('NFKC'), Buffer.from(parts[4]!, 'base64'), expected.length, { N: Number(parts[1]), r: Number(parts[2]), p: Number(parts[3]), maxmem: 64 * 1024 * 1024 }, (e, k) => (e ? reject(e) : resolve(k))),
+      )
+      return key.length === expected.length && timingSafeEqual(key, expected)
+    } catch {
+      return false
+    }
+  }
+  return false
 }
 
 /** Minimum policy: 10+ characters with letters and digits. */
@@ -79,6 +94,9 @@ export async function login(emailRaw: string, password: string, userAgent: strin
   const token = randomBytes(32).toString('base64url')
   await sql.begin(async (tx) => {
     await tx`update admin_users set failed_logins = 0, locked_until = null, last_login_at = now() where id = ${user.id}`
+    if (!user.password_hash.startsWith('pbkdf2-sha256$')) {
+      await tx`update admin_users set password_hash = ${await hashPassword(password)} where id = ${user.id}`
+    }
     await tx`delete from admin_sessions where user_id = ${user.id} and expires_at < now()`
     await tx`
       insert into admin_sessions (token_hash, user_id, csrf_token, expires_at, user_agent)

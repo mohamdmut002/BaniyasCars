@@ -1,7 +1,7 @@
 import type { Context, MiddlewareHandler } from 'hono'
-import { getConnInfo } from '@hono/node-server/conninfo'
 import { randomBytes } from 'node:crypto'
 import { env, isProd } from '../config/env.js'
+import { isWorkers } from '../config/runtime.js'
 import { log } from '../lib/logger.js'
 import { getBranches, getSiteSettings } from '../repo/settings.js'
 import type { Locale } from '../i18n/index.js'
@@ -17,15 +17,14 @@ export type AppEnv = {
 }
 
 export function clientIp(c: Context): string {
+  // Cloudflare sets cf-connecting-ip itself; elsewhere it could be forged, so it is only trusted on Workers.
+  if (isWorkers) return c.req.header('cf-connecting-ip') ?? 'unknown'
   if (env.TRUST_PROXY) {
     const xff = c.req.header('x-forwarded-for')
     if (xff) return xff.split(',')[0]!.trim()
   }
-  try {
-    return getConnInfo(c).remote.address ?? 'unknown'
-  } catch {
-    return 'unknown'
-  }
+  // @hono/node-server exposes the Node request as c.env.incoming.
+  return (c.env as { incoming?: { socket?: { remoteAddress?: string } } } | undefined)?.incoming?.socket?.remoteAddress ?? 'unknown'
 }
 
 /** Request id, timing log, and security headers (CSP with a per-request nonce). */
@@ -35,7 +34,7 @@ export const baseMiddleware: MiddlewareHandler<AppEnv> = async (c, next) => {
   c.set('nonce', nonce)
   c.set('requestId', randomBytes(6).toString('hex'))
   await next()
-  const imgHosts = ['https://auto-ae-prod-storage.storage.googleapis.com', env.S3_PUBLIC_BASE_URL ? new URL(env.S3_PUBLIC_BASE_URL).origin : null]
+  const imgHosts = ['https://auto-ae-prod-storage.storage.googleapis.com', env.S3_PUBLIC_BASE_URL?.startsWith('http') ? new URL(env.S3_PUBLIC_BASE_URL).origin : null]
     .filter(Boolean)
     .join(' ')
   c.header(

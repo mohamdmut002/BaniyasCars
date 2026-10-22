@@ -1,0 +1,27 @@
+# Cloudflare Pages configuration (used by `npx wrangler pages deploy` and by Git-connected builds).
+# Full steps: docs/DEPLOY-CLOUDFLARE.md
+name = "baniyas-cars"
+pages_build_output_dir = "pages-dist"
+compatibility_date = "2025-09-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Plain (non-secret) settings. Secrets (SESSION_SECRET, and DATABASE_URL if you don't use Hyperdrive)
+# are added with:  npx wrangler pages secret put SESSION_SECRET
+[vars]
+NODE_ENV = "production"
+SITE_URL = "https://baniyas-cars.pages.dev"   # change to your own domain once it is connected
+STORAGE_DRIVER = "r2"
+MAX_UPLOAD_MB = "10"
+LOG_LEVEL = "info"
+
+# Photos uploaded from the dashboard. Create it first:  npx wrangler r2 bucket create baniyas-cars-photos
+[[r2_buckets]]
+binding = "UPLOADS"
+bucket_name = "baniyas-cars-photos"
+
+# Connection pooling + caching in front of PostgreSQL. Create it first:
+#   npx wrangler hyperdrive create baniyas-db --connection-string="postgres://USER:PASSWORD@HOST:5432/postgres"
+# then paste the id it prints here.
+[[hyperdrive]]
+binding = "HYPERDRIVE"
+id = "REPLACE_WITH_YOUR_HYPERDRIVE_ID"

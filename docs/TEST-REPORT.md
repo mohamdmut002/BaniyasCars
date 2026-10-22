@@ -2,18 +2,18 @@
 
 Environment: Node.js 22.22, PostgreSQL 16.15 (local), Chromium (headless, Playwright) for layout checks.
 
-## Automated tests — 27 passed, 0 failed
+## Automated tests — 28 passed, 0 failed
 
 Run with `TEST_DATABASE_URL=… npm test`.
 
-**Unit (12)** — `tests/unit.test.ts`
+**Unit (13)** — `tests/unit.test.ts`
 - CSV writer/parser: Arabic text, quotes, commas, newlines; spreadsheet-formula neutralising.
 - Slugs, UAE phone normalisation (050…, 00971…, +971 2…), AED price formatting.
 - WhatsApp link: exact prefilled Arabic message from the brief, URL-encoded; no price → asks for the price instead of inventing one; no number configured → button hidden.
 - Generated descriptions: contain only stated facts; no accident-free / service-history / condition / warranty claims unless the data says so; GCC only when confirmed.
 - Arabic search mapping (باترول ٢٠٢٦ → patrol 2026, لاندكروزر → land cruiser).
 - Vehicle form validation (empty → null, bad engine size, `javascript:` links rejected).
-- scrypt password hashing; S3 SigV4 signature against AWS's published test vector.
+- password hashing (PBKDF2; older scrypt hashes still accepted); S3 SigV4 signature against AWS's published test vector.
 
 **Integration (15)** — `tests/integration.test.ts`, real app + real PostgreSQL
 - Home: Arabic RTL, hreflang, AutoDealer JSON-LD without ratings, WhatsApp link, CSP header.
@@ -28,6 +28,17 @@ Run with `TEST_DATABASE_URL=… npm test`.
 - Roles: staff blocked from contact settings; owner can save them; invalid WhatsApp number rejected.
 - CSV: export has a UTF-8 BOM and all columns; preview reports update / create / skip-duplicate / error rows; apply updates by `source_key` (empty cells keep stored values), creates the new car with its photo URLs, skips the duplicate and the invalid rows.
 - Seed is idempotent: second run creates nothing and keeps a status set in the dashboard.
+
+## Cloudflare build (added later the same day)
+
+The Pages bundle (`npm run build:pages`) was run on **workerd**, the open-source runtime behind Cloudflare Workers and Pages Functions (build 2026-10-22), with `nodejs_compat`, connected to the same PostgreSQL over TCP and an in-memory stand-in for the R2 binding.
+
+- All **15 integration tests passed over HTTP** against workerd (`TEST_BASE_URL=http://localhost:8787`), including login, CSRF and origin checks, the full car lifecycle, photo upload to the R2 binding and serving from `/uploads`, CSV import, roles and settings.
+- A headless Chromium run of the dashboard on workerd uploaded a 3000×4000 JPEG: the browser resized it to a 1200×1600 WebP plus a 480×640 thumbnail, both without EXIF, stored in the bucket and served back.
+- New unit test: JPEG/PNG/WebP signature and size detection, and JPEG metadata removal (13 unit tests now).
+- Node tests still pass (28 total). Measured server CPU per page on Node: home ~8 ms, inventory ~5.5 ms, car page ~4 ms; PBKDF2 login hash ~20 ms.
+
+Not verified: a real deployment to Cloudflare (Pages, Hyperdrive, R2), `wrangler` itself (not installable here), and Cloudflare's CPU limits in production.
 
 ## Manual and scripted checks
 

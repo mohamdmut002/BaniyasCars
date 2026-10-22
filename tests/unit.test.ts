@@ -97,9 +97,9 @@ test('vehicle form validation turns empty fields into null and rejects bad value
   assert.equal(vehicleInput.safeParse({ make: 'A', model: 'X', year: 2026, source_url: 'javascript:alert(1)' }).success, false)
 })
 
-test('passwords are hashed with scrypt and verified', async () => {
+test('passwords are hashed with PBKDF2 and verified', async () => {
   const h = await hashPassword('Correct horse 42')
-  assert.ok(h.startsWith('scrypt$'))
+  assert.ok(h.startsWith('pbkdf2-sha256$'))
   assert.equal(await verifyPassword('Correct horse 42', h), true)
   assert.equal(await verifyPassword('wrong', h), false)
   assert.ok(passwordProblem('short1'))
@@ -118,4 +118,20 @@ test('S3 signature matches the AWS SigV4 documented example', () => {
     now: new Date('2013-05-24T00:00:00Z'),
   })
   assert.match(headers.authorization!, /Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41$/)
+})
+
+test('image signatures and sizes are read without native libraries (Cloudflare path)', async () => {
+  const { sniff, stripJpegMetadata } = await import('../src/lib/images.js')
+  const sharp = (await import('sharp')).default
+  const jpeg = await sharp({ create: { width: 640, height: 480, channels: 3, background: '#123' } }).jpeg().withMetadata({ exif: { IFD0: { Copyright: 'GPS-secret' } } }).toBuffer()
+  const png = await sharp({ create: { width: 320, height: 400, channels: 3, background: '#123' } }).png().toBuffer()
+  const webp = await sharp({ create: { width: 1200, height: 900, channels: 3, background: '#123' } }).webp().toBuffer()
+  assert.deepEqual(sniff(jpeg), { type: 'jpeg', width: 640, height: 480 })
+  assert.deepEqual(sniff(png), { type: 'png', width: 320, height: 400 })
+  assert.deepEqual(sniff(webp), { type: 'webp', width: 1200, height: 900 })
+  assert.equal(sniff(Buffer.from('<?php echo 1; ?>'.padEnd(64, ' '))), null)
+  assert.ok(jpeg.includes('GPS-secret'))
+  const clean = stripJpegMetadata(jpeg)
+  assert.ok(!clean.includes('GPS-secret'))
+  assert.deepEqual((await sharp(clean).metadata()).width, 640) // still a valid JPEG
 })

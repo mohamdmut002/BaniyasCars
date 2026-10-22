@@ -1,7 +1,6 @@
-import { mkdir, writeFile, unlink } from 'node:fs/promises'
-import path from 'node:path'
 import { createHash, createHmac } from 'node:crypto'
 import { env } from '../config/env.js'
+import { runtime, type R2Like } from '../config/runtime.js'
 
 export interface Storage {
   /** Stores a file and returns its public URL. */
@@ -14,16 +13,36 @@ const safeKey = (key: string) => {
   return key
 }
 
+// Node-only modules are imported lazily so the Cloudflare bundle never loads them.
 class LocalStorage implements Storage {
   constructor(private root: string) {}
   async put(key: string, body: Buffer) {
-    const file = path.join(this.root, safeKey(key))
+    const [{ mkdir, writeFile }, path] = await Promise.all([import('node:fs/promises'), import('node:path')])
+    const file = path.join(path.resolve(this.root), safeKey(key))
     await mkdir(path.dirname(file), { recursive: true })
     await writeFile(file, body)
     return `/uploads/${key}`
   }
   async delete(key: string) {
-    await unlink(path.join(this.root, safeKey(key))).catch(() => {})
+    const [{ unlink }, path] = await Promise.all([import('node:fs/promises'), import('node:path')])
+    await unlink(path.join(path.resolve(this.root), safeKey(key))).catch(() => {})
+  }
+}
+
+/** Cloudflare R2 through the Pages/Workers binding. Files are served by the app at /uploads/<key>. */
+export class R2Storage implements Storage {
+  constructor(private bucket: () => R2Like) {}
+  async put(key: string, body: Buffer, contentType: string) {
+    await this.bucket().put(safeKey(key), new Uint8Array(body), {
+      httpMetadata: { contentType, cacheControl: 'public, max-age=31536000, immutable' },
+    })
+    return `/uploads/${key}`
+  }
+  async delete(key: string) {
+    await this.bucket().delete(safeKey(key))
+  }
+  async get(key: string) {
+    return this.bucket().get(safeKey(key))
   }
 }
 
@@ -124,8 +143,18 @@ export function signV4(p: {
 
 const encodeRfc3986 = (s: string) => encodeURIComponent(s).replace(/[!'()*]/g, (c) => '%' + c.charCodeAt(0).toString(16).toUpperCase())
 
-export const storage: Storage =
-  env.STORAGE_DRIVER === 's3'
+let instance: Storage | null = null
+
+/** The configured storage driver, created on first use (Workers bindings exist only once a request arrives). */
+export function getStorage(): Storage {
+  if (instance) return instance
+  instance =
+    env.STORAGE_DRIVER === 'r2'
+      ? new R2Storage(() => {
+          if (!runtime.r2) throw new Error('STORAGE_DRIVER=r2 but no UPLOADS R2 binding is configured')
+          return runtime.r2
+        })
+      : env.STORAGE_DRIVER === 's3'
     ? new S3Storage({
         endpoint: env.S3_ENDPOINT!,
         region: env.S3_REGION,
@@ -135,4 +164,6 @@ export const storage: Storage =
         publicBaseUrl: env.S3_PUBLIC_BASE_URL!,
         pathStyle: env.S3_FORCE_PATH_STYLE,
       })
-    : new LocalStorage(path.resolve(env.LOCAL_STORAGE_DIR))
+    : new LocalStorage(env.LOCAL_STORAGE_DIR)
+  return instance
+}
