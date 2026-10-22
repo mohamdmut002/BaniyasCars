@@ -1,0 +1,85 @@
+{
+  "_about": "Facts captured on 2026-10-22 from public posts on the official Instagram account @baniyascars (https://www.instagram.com/baniyascars/). Only fields stated in the post captions are recorded. Instagram image URLs are signed and expire, so no photos are stored for Instagram-only listings; the dealership can upload them from the admin dashboard.",
+  "capturedAt": "2026-10-22",
+  "profile": {
+    "name": "بني ياس للسيارات | Baniyas Cars",
+    "handle": "baniyascars",
+    "bio": "نوفر جميع أنواع السيارات (تويوتا، لكزس، نيسان، رينو، جيب، جي ام سي)",
+    "mapsUrl": "https://maps.app.goo.gl/BWHbL7VTG3TRc3g68",
+    "whatsappStatedInCaptions": "00971504422050",
+    "branchesStatedInCaptions": ["أبوظبي", "فرع العين", "فرع دبي", "قسم السيارات المستعملة بيع وشراء", "قسم التصدير"]
+  },
+  "listings": [
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/p/Deyk-RKiAOw/",
+      "postedAt": "2026-10-22",
+      "make": "Nissan", "model": "Patrol", "trim": "LE Titanium", "year": 2021,
+      "condition": "used", "mileageKm": 150000, "priceAed": 120000
+    },
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/reel/DevzZQEKe3P/",
+      "alsoPosted": ["https://www.instagram.com/baniyascars/reel/Deetn4WIqP7/", "https://www.instagram.com/baniyascars/p/DeYotPxiDy9/"],
+      "postedAt": "2026-10-20",
+      "make": "MG", "model": "GT", "trim": "Lux", "year": 2026,
+      "engine": "1.5T turbo, 4 cylinders", "hp": 173, "transmission": "DCT", "gears": 7, "drivetrain": "FWD",
+      "fuelTankL": 50, "priceAed": 65000, "priceIncludesVat": true,
+      "warranty": "ضمان الوكيل 6 سنوات أو 200 ألف كيلومتر",
+      "features": ["إضاءة LED أمامية ونهارية وخلفية", "جنوط ألمنيوم 17 إنش", "دخول وتشغيل بالبصمة", "حساسات خلفية", "مقاعد جلد سوداء", "شاشة 10.25 إنش مع كار بلاي", "6 سماعات", "كاميرا محيطية 360 درجة", "فتحة سقف", "رادار وتنبيه الخروج عن المسار وتنبيه التصادم الأمامي", "فرامل يد أوتوماتيكية وأوتو هولد", "مثبت سرعة", "منافذ تكييف خلفية", "تثبيت مقعد الطفل"]
+    },
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/p/DerZSlriL1W/",
+      "postedAt": "2026-10-19",
+      "make": "Nissan", "model": "Patrol", "trim": "Platinum (بدون تيربو)", "year": 2026,
+      "engine": "3.8L V6", "hp": 316, "torqueNm": 386, "transmission": "AT", "gears": 9, "fuelTankL": 97,
+      "condition": "new", "priceAed": 301000, "priceIncludesVat": true,
+      "warranty": "ضمان الوكيل 3 سنوات أو 100 ألف كيلومتر",
+      "features": ["إضاءة LED وكشافات", "حساسات أمامية وخلفية", "جنوط ألمنيوم 20 إنش", "سقف ومرايا باللون الأسود", "مفتاح ذكي مع قفل وفتح تلقائي", "تشغيل عن بعد", "باب خلفي كهربائي", "طي المقاعد الخلفية كهربائياً", "مقاعد جلد بيج", "شاشة 14.3 إنش وعدادات رقمية", "كاميرات محيطية 360", "دبل خفيف وثقيل وقفل دفرنس خلفي", "رادار وتنبيه الخروج عن المسار وتنبيه التصادم والنقطة العمياء", "ثلاجة", "مقاعد أمامية كهربائية بتبريد وتسخين ومساج", "فتحة سقف بانوراما", "شاحن لاسلكي", "ذاكرة لمقعد السائق", "تكييف خلفي مستقل"]
+    },
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/p/Deqqt9AGgQ3/",
+      "postedAt": "2026-10-18",
+      "make": "Nissan", "model": "Patrol", "trim": "LE Platinum", "year": 2023,
+      "condition": "used", "mileageKm": 148000, "priceAed": 177000
+    },
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/p/DehRpcYGuGv/",
+      "postedAt": "2026-10-15",
+      "make": "Nissan", "model": "Sunny", "trim": "1.5L", "year": 2025,
+      "condition": "used", "mileageKm": 6800, "priceAed": 33500,
+      "warranty": "ضمان الوكيل (المدة غير مذكورة في الإعلان)"
+    },
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/reel/DdrK2VtIdVJ/",
+      "postedAt": "2026-09-24",
+      "make": "Nissan", "model": "Patrol", "trim": "Platinum V8", "year": 2023,
+      "engine": "V8", "hp": 400, "transmission": "AT", "gears": 7,
+      "priceAed": 249000, "priceIncludesVat": true,
+      "features": ["دعامية سيتي", "إضاءة LED ونهارية", "رادار ونقطة عمياء", "جنوط ألمنيوم 20 إنش", "دخول بالبصمة", "باب خلفي كهربائي", "طي المقاعد الخلفية كهربائياً", "تشغيل عن بعد", "جلد بتطريز دايموند", "شاشة ملاحة", "كاميرات محيطية 360", "شاشات خلفية", "تبريد وتسخين المقاعد الأمامية", "شاحن لاسلكي", "فتحة سقف", "ثلاجة"]
+    }
+  ],
+  "matchesToAutoAe": [
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/reel/Dcxyw7GourQ/",
+      "postedAt": "2026-09-02",
+      "autoAeId": "275765",
+      "note": "MG 8 plug-in hybrid 2026 at 75,000 incl. VAT, matches the Abu Dhabi auto.ae listing price.",
+      "warranty": "ضمان الوكيل 6 سنوات أو 200 ألف كيلومتر، وضمان البطارية 8 سنوات أو 120 ألف كيلومتر",
+      "priceIncludesVat": true,
+      "evRangeKm": 125, "fuelTankL": 55,
+      "features": ["إضاءة LED", "جنوط ألمنيوم 17 إنش", "دخول ذكي", "حساسات خلفية", "مقاعد جلد", "فتحة سقف", "مقعد سائق كهربائي", "كاميرا خلفية", "كار بلاي", "فرامل يد أوتوماتيكية وأوتو هولد", "مثبت سرعة", "منافذ تكييف خلفية", "تثبيت مقعد الطفل"]
+    },
+    {
+      "postUrl": "https://www.instagram.com/baniyascars/reel/Dc3qd0bIH8L/",
+      "postedAt": "2026-09-04",
+      "autoAeId": "260837",
+      "note": "Nissan X-Trail S 4x2 2026 at 81,000 incl. VAT, matches the Dubai auto.ae listing price. The post says 4x2 (two-wheel drive) and 181 hp, while auto.ae lists AWD and 184 hp.",
+      "warranty": "ضمان الوكيل 3 سنوات أو 100 ألف كيلومتر",
+      "priceIncludesVat": true,
+      "fuelTankL": 60,
+      "features": ["إضاءة LED وكشافات ونهارية", "جنوط ألمنيوم 17 إنش", "4 حساسات خلفية", "5 مقاعد قماش رمادية", "شاشة وبلوتوث", "تشغيل بضغطة زر", "مثبت سرعة", "أوامر صوتية", "قير تبترونك ووضعيات قيادة", "فرامل يد أوتوماتيكية وأوتو هولد", "منافذ USB و12 فولت", "منفذ تكييف خلفي", "تثبيت مقعد الطفل"]
+    }
+  ],
+  "announcements": [
+    { "postUrl": "https://www.instagram.com/baniyascars/reel/Dey9_K8Ibbi/", "postedAt": "2026-10-22", "text": "وصول تويوتا اف جي للحجز والاستفسار", "note": "No price or specifications given; not added as a listing." }
+  ]
+}

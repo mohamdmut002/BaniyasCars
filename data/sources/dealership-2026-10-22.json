@@ -1,0 +1,32 @@
+{
+  "_about": "Dealership contact facts with the source each one came from. 'confidence' is 'verified' when the dealership itself published it on an official account, 'secondary' when it comes from a third-party directory and needs confirmation.",
+  "capturedAt": "2026-10-22",
+  "facts": [
+    { "field": "legalName", "value": "Bani Yas Cars Est. — مؤسسة بني ياس للسيارات", "source": "https://www.facebook.com/bce1981/about", "confidence": "verified" },
+    { "field": "brandName", "value": "بني ياس للسيارات | Baniyas Cars", "source": "https://www.instagram.com/baniyascars/", "confidence": "verified" },
+    { "field": "whatsapp", "value": "+971504422050", "source": "Instagram post captions by @baniyascars (e.g. https://www.instagram.com/baniyascars/p/Deyk-RKiAOw/)", "confidence": "verified" },
+    { "field": "phone", "value": "+971508001443", "source": "https://www.facebook.com/bce1981/about (Mobile)", "confidence": "verified" },
+    { "field": "email", "value": "info@baniyascars.com", "source": "https://www.facebook.com/bce1981/about", "confidence": "verified" },
+    { "field": "website", "value": "http://www.baniyascars.com/", "source": "https://www.facebook.com/bce1981/about", "confidence": "verified", "note": "Domain did not resolve when tested on 2026-10-22." },
+    { "field": "addressAbuDhabi", "value": "ايكاد 5، مدينة رحايل للسيارات، أبوظبي، الإمارات العربية المتحدة، ص.ب 55805", "source": "https://www.facebook.com/bce1981/about", "confidence": "verified" },
+    { "field": "addressAbuDhabiEn", "value": "ICAD V (Abu Dhabi Industrial City), Rahayel Cars City, Abu Dhabi, UAE — P.O. Box 55805", "source": "https://www.facebook.com/bce1981/about and https://auto.ae/baniyas/", "confidence": "verified" },
+    { "field": "addressDubai", "value": "Ras Al Khor Industrial Area 3, Dubai, UAE", "source": "https://auto.ae/baniyascars/ listing pages (dealer-entered address)", "confidence": "verified" },
+    { "field": "branchAlAin", "value": "فرع العين — 0564404320", "source": "Instagram captions", "confidence": "verified", "note": "Exact Al Ain address not published in the sources reviewed." },
+    { "field": "branchDubaiPhones", "value": ["+971508131408", "+971503116321", "+971565989196"], "source": "Instagram captions", "confidence": "verified" },
+    { "field": "usedCarsDeptPhone", "value": "+971506812224", "source": "Instagram captions", "confidence": "verified" },
+    { "field": "exportDeptPhones", "value": ["+971506131744", "+971564458759", "+971502205514"], "source": "Instagram captions", "confidence": "verified" },
+    { "field": "mapsUrl", "value": "https://maps.app.goo.gl/BWHbL7VTG3TRc3g68", "source": "Instagram bio", "confidence": "verified" },
+    { "field": "facebook", "value": "https://www.facebook.com/bce1981/", "followers": "241K", "confidence": "verified" },
+    { "field": "instagram", "value": "https://www.instagram.com/baniyascars/", "followers": "155K", "confidence": "verified" },
+    { "field": "threads", "value": "https://www.threads.com/@baniyascars", "source": "Instagram profile link", "confidence": "verified" },
+    { "field": "hours", "value": "09:00–21:00", "source": "auto.ae showroom profiles", "confidence": "secondary" },
+    { "field": "landline", "value": "+97125831305", "source": "https://dealers.kargal.ae/bani-yas-cars/ (older directory)", "confidence": "secondary" },
+    { "field": "oldAddress", "value": "Showroom No. 1, Motor World, Al Shamkha, Abu Dhabi", "source": "https://dealers.kargal.ae/bani-yas-cars/ (older directory, 2018-era listings)", "confidence": "secondary", "note": "Not used on the site; Facebook gives ICAD 5 / Rahayel Cars City." },
+    { "field": "brandsCarried", "value": "تويوتا، لكزس، نيسان، رينو، جيب، جي ام سي (حسب نبذة إنستغرام) — والمخزون الحالي يشمل أيضاً MG وشيفروليه", "source": "Instagram bio + auto.ae inventory", "confidence": "verified" }
+  ],
+  "notClaimed": [
+    "Founding year: the Facebook handle 'bce1981' suggests 1981 but no source states it, so the site does not claim it.",
+    "Customer ratings or reviews: none are shown on the site.",
+    "Financing: not advertised in the sources reviewed."
+  ]
+}
