@@ -1,40 +1,24 @@
 {
   "name": "baniyas-cars",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Website and inventory dashboard for Baniyas Cars (معرض بني ياس للسيارات), UAE",
+  "description": "Static, Arabic-first website for Baniyas Cars (معرض بني ياس للسيارات), UAE. No database or server.",
   "type": "module",
   "engines": {
     "node": ">=20.11"
   },
   "scripts": {
-    "dev": "node scripts/build-assets.mjs && tsx watch src/server.ts",
-    "build": "node scripts/build-assets.mjs && tsc --noEmit && node scripts/build-server.mjs",
-    "start": "node dist/server.js",
-    "db:migrate": "tsx scripts/migrate.ts",
-    "db:seed": "tsx scripts/seed.ts",
-    "admin:create": "tsx scripts/create-admin.ts",
-    "inventory:build": "tsx scripts/build-inventory.ts",
-    "images:localize": "tsx scripts/localize-images.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "tsx --test tests/*.test.ts",
-    "build:pages": "node scripts/build-pages.mjs",
-    "deploy:pages": "node scripts/build-pages.mjs && wrangler pages deploy",
-    "preview:pages": "node scripts/build-pages.mjs && wrangler pages dev"
-  },
-  "dependencies": {
-    "@hono/node-server": "^1.19.17",
-    "hono": "^4.13.13",
-    "postgres": "^3.4.9",
-    "sharp": "^0.35.4",
-    "zod": "^3.25.76"
+    "dev": "node scripts/dev.mjs",
+    "build": "tsx scripts/build.ts",
+    "preview": "node scripts/serve.mjs",
+    "typecheck": "tsc",
+    "test": "tsc && tsx --test tests/*.test.ts"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
     "esbuild": "^0.28.2",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.12",
-    "typescript": "^6.0.3",
-    "wrangler": "^4.40.0"
+    "typescript": "^6.0.3"
   }
 }

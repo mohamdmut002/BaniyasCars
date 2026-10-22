@@ -1,4 +1,4 @@
-import type { BodyType, Condition, Drivetrain, Fuel, RegionalSpec, Status, Transmission, Verification } from '../domain/vehicle.js'
+import type { BodyType, Condition, Drivetrain, Fuel, RegionalSpec, Status, Transmission, Verification } from '../data/types.js'
 
 export const LOCALES = ['ar', 'en'] as const
 export type Locale = (typeof LOCALES)[number]
@@ -34,7 +34,6 @@ const ar = {
     viewAll: 'عرض كل السيارات',
     byBrand: 'تصفّح حسب الماركة',
     byPrice: 'تصفّح حسب السعر',
-    offers: 'العروض الحالية',
     why: 'عن المعرض',
     contactTitle: 'تحدّث مع قسم المبيعات',
     contactBody: 'أرسل لنا اسم السيارة أو رابطها على واتساب، وسيرد عليك فريق المبيعات بالتوفر والسعر النهائي.',
@@ -76,6 +75,7 @@ const ar = {
       price_asc: 'السعر: من الأقل',
       price_desc: 'السعر: من الأعلى',
       year_desc: 'سنة الصنع: الأحدث',
+      year_asc: 'سنة الصنع: الأقدم',
       mileage_asc: 'الممشى: الأقل',
     },
     emptyTitle: 'لا توجد سيارات تطابق هذا البحث',
@@ -105,6 +105,9 @@ const ar = {
     similar: 'سيارات مشابهة',
     branch: 'الفرع',
     exportOnly: 'للتصدير فقط',
+    sample: 'مثال توضيحي — ليست سيارة معروضة',
+    sampleNote: 'هذا الإعلان مثال لتجربة تصميم الموقع وليس سيارة حقيقية لدى المعرض.',
+    contactUs: 'تواصل مع المعرض',
     exportNote: 'هذه السيارة معروضة للتصدير خارج الدولة حسب الإعلان الأصلي. تواصل مع قسم التصدير للتفاصيل.',
     needsConfirmation: 'يرجى تأكيد التوفر قبل الزيارة',
     needsConfirmationNote: 'نُشر هذا الإعلان منذ مدة أو توجد معلومة بحاجة لتأكيد. اسأل فريق المبيعات عن التوفر والسعر الحالي.',
@@ -112,8 +115,6 @@ const ar = {
     sold: 'مُباعة',
     soldNote: 'تم بيع هذه السيارة. تصفّح السيارات المشابهة أدناه.',
     generalSpecsNote: 'المواصفات أعلاه منقولة من إعلان المعرض لهذه السيارة.',
-    inquiryTitle: 'اطلب اتصالاً من المعرض',
-    inquiryBody: 'اترك اسمك ورقمك وسيتواصل معك فريق المبيعات بخصوص هذه السيارة.',
   },
   spec: {
     year: 'سنة الصنع',
@@ -135,16 +136,6 @@ const ar = {
     litre: 'لتر',
     nm: 'نيوتن متر',
     gears: (n: number) => `${n} سرعات`,
-  },
-  form: {
-    name: 'الاسم',
-    phone: 'رقم الهاتف',
-    message: 'رسالتك (اختياري)',
-    send: 'أرسل الطلب',
-    sent: 'تم إرسال طلبك. سيتواصل معك فريق المبيعات قريباً.',
-    invalid: 'تحقق من الاسم ورقم الهاتف ثم أعد الإرسال.',
-    rateLimited: 'تم إرسال عدة طلبات من هذا الجهاز. حاول بعد قليل أو تواصل عبر واتساب.',
-    phoneHint: 'مثال: 0501234567',
   },
   contact: {
     title: 'تواصل مع معرض بني ياس للسيارات',
@@ -188,8 +179,8 @@ const ar = {
     body: { sedan: 'سيدان', suv: 'دفع رباعي (SUV)', pickup: 'بيك أب', hatchback: 'هاتشباك', coupe: 'كوبيه', van: 'فان', other: 'أخرى' } as Record<BodyType, string>,
     condition: { new: 'جديدة', used: 'مستعملة' } as Record<Condition, string>,
     regional: { gcc: 'خليجية', american: 'أمريكية', japanese: 'يابانية', european: 'أوروبية', korean: 'كورية', chinese: 'صينية', other: 'وارد' } as Record<RegionalSpec, string>,
-    status: { available: 'متوفرة', reserved: 'محجوزة', sold: 'مُباعة', hidden: 'مخفية' } as Record<Status, string>,
-    verification: { confirmed: 'مؤكدة', needs_confirmation: 'بحاجة لتأكيد', historical: 'إعلان سابق' } as Record<Verification, string>,
+    status: { available: 'متوفرة', reserved: 'محجوزة', sold: 'مُباعة' } as Record<Status, string>,
+    verification: { confirmed: 'مؤكدة', needs_confirmation: 'بحاجة لتأكيد', sample: 'مثال توضيحي' } as Record<Verification, string>,
   },
 }
 
@@ -224,7 +215,6 @@ const en: Dict = {
     viewAll: 'View all cars',
     byBrand: 'Browse by brand',
     byPrice: 'Browse by price',
-    offers: 'Current offers',
     why: 'About the showroom',
     contactTitle: 'Talk to the sales team',
     contactBody: 'Send us the car name or link on WhatsApp and the sales team will reply with availability and the final price.',
@@ -266,6 +256,7 @@ const en: Dict = {
       price_asc: 'Price: low to high',
       price_desc: 'Price: high to low',
       year_desc: 'Model year: newest',
+      year_asc: 'Model year: oldest',
       mileage_asc: 'Mileage: lowest',
     },
     emptyTitle: 'No cars match this search',
@@ -295,6 +286,9 @@ const en: Dict = {
     similar: 'Similar cars',
     branch: 'Branch',
     exportOnly: 'Export only',
+    sample: 'Sample — not a real listing',
+    sampleNote: 'This listing is a layout sample, not a real car at the showroom.',
+    contactUs: 'Contact the showroom',
     exportNote: 'The original listing offers this car for export outside the UAE. Contact the export team for details.',
     needsConfirmation: 'Please confirm availability before visiting',
     needsConfirmationNote: 'This listing is older or has a detail that needs confirming. Ask the sales team about availability and the current price.',
@@ -302,8 +296,6 @@ const en: Dict = {
     sold: 'Sold',
     soldNote: 'This car has been sold. See similar cars below.',
     generalSpecsNote: 'The specifications above are taken from the showroom’s listing for this car.',
-    inquiryTitle: 'Request a call back',
-    inquiryBody: 'Leave your name and number and the sales team will contact you about this car.',
   },
   spec: {
     year: 'Model year',
@@ -325,16 +317,6 @@ const en: Dict = {
     litre: 'L',
     nm: 'Nm',
     gears: (n: number) => `${n}-speed`,
-  },
-  form: {
-    name: 'Name',
-    phone: 'Phone number',
-    message: 'Message (optional)',
-    send: 'Send request',
-    sent: 'Your request was sent. The sales team will contact you soon.',
-    invalid: 'Check your name and phone number, then send again.',
-    rateLimited: 'Several requests were sent from this device. Try again shortly or message us on WhatsApp.',
-    phoneHint: 'e.g. 0501234567',
   },
   contact: {
     title: 'Contact Baniyas Cars',
@@ -377,8 +359,8 @@ const en: Dict = {
     body: { sedan: 'Sedan', suv: 'SUV', pickup: 'Pickup', hatchback: 'Hatchback', coupe: 'Coupe', van: 'Van', other: 'Other' },
     condition: { new: 'New', used: 'Used' },
     regional: { gcc: 'GCC', american: 'American', japanese: 'Japanese', european: 'European', korean: 'Korean', chinese: 'Chinese', other: 'Imported' },
-    status: { available: 'Available', reserved: 'Reserved', sold: 'Sold', hidden: 'Hidden' },
-    verification: { confirmed: 'Confirmed', needs_confirmation: 'Needs confirmation', historical: 'Past listing' },
+    status: { available: 'Available', reserved: 'Reserved', sold: 'Sold' },
+    verification: { confirmed: 'Confirmed', needs_confirmation: 'Needs confirmation', sample: 'Sample' },
   },
 }
 

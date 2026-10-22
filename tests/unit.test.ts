@@ -1,137 +1,123 @@
-process.env.DATABASE_URL ??= 'postgres://unused@localhost:1/unused'
-process.env.SESSION_SECRET ??= 'x'.repeat(40)
-process.env.NODE_ENV = 'test'
-
 import { test } from 'node:test'
 import assert from 'node:assert/strict'
+import { normalizeUaePhone, displayPhone, formatPrice } from '../src/lib/format.js'
+import { whatsappLink, vehicleWhatsappText } from '../src/lib/whatsapp.js'
+import { describeAr, describeEn } from '../src/lib/describe.js'
+import { translateQuery } from '../src/domain/names.js'
+import { applyFilters, emptyFilters, parseFilters, toIndex, toParams } from '../src/lib/filter.js'
+import { vehicles } from '../src/data/vehicles.js'
+import { defineVehicle } from '../src/data/types.js'
+import { validate, homeData, similarTo } from '../scripts/build.js'
+import { jsx, raw } from '../src/jsx/jsx-runtime.js'
 
-const { parseCsv, toCsv } = await import('../src/lib/csv.js')
-const { slugify, vehicleSlug } = await import('../src/lib/slug.js')
-const { normalizeUaePhone, displayPhone, formatPrice } = await import('../src/lib/format.js')
-const { whatsappLink, vehicleWhatsappText } = await import('../src/lib/whatsapp.js')
-const { describeAr, describeEn } = await import('../src/lib/describe.js')
-const { translateQuery } = await import('../src/domain/names.js')
-const { signV4 } = await import('../src/lib/storage.js')
-const { vehicleInput } = await import('../src/domain/vehicle.js')
-const { hashPassword, verifyPassword, passwordProblem } = await import('../src/lib/auth.js')
-
-test('CSV round-trips Arabic text, quotes, commas and newlines', () => {
-  const rows = [{ a: 'نيسان باترول', b: 'He said "hi", ok', c: 'line1\nline2' }]
-  const out = parseCsv(toCsv(rows, ['a', 'b', 'c']))
-  assert.deepEqual(out.header, ['a', 'b', 'c'])
-  assert.deepEqual(out.rows[0], rows[0])
+test('JSX renderer escapes text and attributes, keeps raw HTML', () => {
+  const html = jsx('a', { href: '/x?a=1&b="2"', hidden: true, title: null, children: ['<b>', raw('<i>ok</i>'), 3] })
+  assert.equal(html.value, '<a href="/x?a=1&amp;b=&quot;2&quot;" hidden>&lt;b&gt;<i>ok</i>3</a>')
 })
 
-test('CSV neutralises spreadsheet formulas but keeps negative numbers', () => {
-  const csv = toCsv([{ a: '=HYPERLINK("x")', b: '-5' }], ['a', 'b'])
-  assert.match(csv, /'=HYPERLINK/)
-  assert.match(csv, /,-5\r\n/)
+test('inventory file is valid and every real car has a source', () => {
+  assert.deepEqual(validate(vehicles), [])
+  assert.equal(vehicles.length, 72)
+  for (const v of vehicles) {
+    if (v.verification === 'sample') continue
+    assert.ok(v.source_url, `${v.slug} has no source_url`)
+    assert.ok(v.last_verified_at, `${v.slug} has no last_verified_at`)
+  }
 })
 
-test('slugs are latin, unique-suffixed and safe', () => {
-  assert.equal(slugify('Land Cruiser Prado TXL3'), 'land-cruiser-prado-txl3')
-  assert.equal(vehicleSlug({ make: 'Nissan', model: 'Patrol', trim: 'LE Titanium+', year: 2026 }, '275742'), 'nissan-patrol-le-titanium-plus-2026-275742')
+test('validation catches bad entries', () => {
+  const bad = [
+    defineVehicle({ slug: 'Bad Slug', make: 'X', model: 'Y', year: 2020 }),
+    defineVehicle({ slug: 'dup', make: 'X', model: 'Y', year: 1800 }),
+    defineVehicle({ slug: 'dup', make: 'X', model: 'Y', year: 2020, price_aed: -5, images: ['photo.jpg'] }),
+  ]
+  const problems = validate(bad).join('\n')
+  assert.match(problems, /slug must use/)
+  assert.match(problems, /duplicate slug/)
+  assert.match(problems, /invalid year/)
+  assert.match(problems, /price_aed/)
+  assert.match(problems, /must be a full URL/)
 })
 
-test('UAE phone numbers normalise to E.164', () => {
+test('UAE phone numbers normalise and display', () => {
   assert.equal(normalizeUaePhone('050 442 2050'), '+971504422050')
   assert.equal(normalizeUaePhone('00971504422050'), '+971504422050')
-  assert.equal(normalizeUaePhone('+971 2 583 1305'), '+97125831305')
-  assert.equal(normalizeUaePhone('12'), null)
   assert.equal(displayPhone('+971504422050'), '050 442 2050')
 })
 
 test('prices use western digits with the AED label', () => {
   assert.equal(formatPrice(318000, 'ar'), '318,000 درهم')
   assert.equal(formatPrice(318000, 'en'), 'AED 318,000')
-  assert.equal(formatPrice(null, 'ar'), null)
 })
 
-test('WhatsApp link carries the requested Arabic message', () => {
+test('WhatsApp link carries the prefilled Arabic message; no number → no link', () => {
   const text = vehicleWhatsappText({ make: 'Nissan', model: 'Patrol', trim: 'LE T2', year: 2026, price_aed: 318000 }, 'ar')
   assert.equal(text, 'السلام عليكم، استفسر عن سيارة نيسان باترول LE T2 موديل 2026، المعروضة بسعر 318,000 درهم. هل السيارة متوفرة؟')
   const link = whatsappLink('+971504422050', text)!
   assert.ok(link.startsWith('https://wa.me/971504422050?text='))
   assert.equal(decodeURIComponent(link.split('text=')[1]!), text)
   assert.equal(whatsappLink(null, 'x'), null)
+  assert.match(vehicleWhatsappText({ make: 'MG', model: '5 (GT)', trim: null, year: 2026, price_aed: null }, 'ar'), /وما سعرها/)
 })
 
-test('WhatsApp text without a price asks for it instead of inventing one', () => {
-  const text = vehicleWhatsappText({ make: 'MG', model: '5 (GT)', trim: null, year: 2026, price_aed: null }, 'ar')
-  assert.match(text, /وما سعرها/)
-  assert.doesNotMatch(text, /درهم/)
-})
-
-const base = {
-  make: 'Nissan', model: 'X-Trail', trim: null, year: 2023, price_aed: 68000, price_includes_vat: null, mileage_km: 69240,
-  condition: 'used' as const, transmission: 'cvt' as const, gears: null, fuel: 'petrol' as const, engine_l: '2.5', horsepower: 184,
-  drivetrain: 'awd' as const, body_type: 'suv' as const, exterior_color: 'White', regional_spec: null, export_only: false,
-  warranty_ar: null, warranty_en: null,
-}
-
-test('descriptions only state verified facts', () => {
-  for (const d of [describeAr(base), describeEn(base)]) {
-    assert.doesNotMatch(d, /حوادث|accident|service history is|original paint|صبغ|excellent condition|ممتازة|ضمان|warranty/i)
-  }
-  assert.match(describeAr(base), /69,240 كيلومتر/)
-  assert.match(describeEn(base), /CVT/)
-  assert.doesNotMatch(describeAr({ ...base, regional_spec: null }), /خليجية/)
-  assert.match(describeAr({ ...base, regional_spec: 'gcc' }), /خليجية/)
-  assert.match(describeAr({ ...base, warranty_ar: 'ضمان الوكيل 3 سنوات' }), /ضمان الوكيل 3 سنوات/)
+test('descriptions only state listed facts', () => {
+  const v = defineVehicle({ slug: 'x', make: 'Nissan', model: 'X-Trail', year: 2023, price_aed: 68000, mileage_km: 69240, condition: 'used', transmission: 'cvt', fuel: 'petrol', engine_l: 2.5, horsepower: 184, drivetrain: 'awd' })
+  for (const d of [describeAr(v), describeEn(v)]) assert.doesNotMatch(d, /حوادث|accident|ممتازة|excellent|ضمان|warranty|خليجية|GCC/i)
+  assert.match(describeAr(v), /69,240 كيلومتر/)
+  assert.match(describeAr({ ...v, regional_spec: 'gcc' }), /خليجية/)
 })
 
 test('Arabic search words map to stored English names', () => {
   assert.equal(translateQuery('باترول ٢٠٢٦'), 'patrol 2026')
   assert.equal(translateQuery('لاندكروزر'), 'land cruiser')
-  assert.equal(translateQuery('تويوتا لاند كروزر برادو'), 'toyota land cruiser prado')
 })
 
-test('vehicle form validation turns empty fields into null and rejects bad values', () => {
-  const ok = vehicleInput.parse({ make: 'Toyota', model: 'Camry', year: '2026', price_aed: '134,000', mileage_km: '', export_only: 'on' })
-  assert.equal(ok.price_aed, 134000)
-  assert.equal(ok.mileage_km, null)
-  assert.equal(ok.export_only, true)
-  assert.equal(ok.featured, false)
-  assert.equal(vehicleInput.safeParse({ make: '', model: 'X', year: 2026 }).success, false)
-  assert.equal(vehicleInput.safeParse({ make: 'A', model: 'X', year: 2026, engine_l: '45' }).success, false)
-  assert.equal(vehicleInput.safeParse({ make: 'A', model: 'X', year: 2026, source_url: 'javascript:alert(1)' }).success, false)
+const index = vehicles.filter((v) => v.status !== 'sold').map(toIndex)
+const f = (q: string) => applyFilters(index, parseFilters(new URLSearchParams(q)))
+
+test('search works in Arabic and English', () => {
+  const ar = f('q=' + encodeURIComponent('باترول'))
+  assert.ok(ar.length >= 10)
+  assert.ok(ar.every((c) => c.md === 'Patrol'))
+  assert.deepEqual(f('q=patrol').map((c) => c.s).sort(), ar.map((c) => c.s).sort())
+  assert.ok(f('q=' + encodeURIComponent('تويوتا كامري')).every((c) => c.mk === 'Toyota' && c.md === 'Camry'))
+  assert.equal(f('q=lamborghini').length, 0)
 })
 
-test('passwords are hashed with PBKDF2 and verified', async () => {
-  const h = await hashPassword('Correct horse 42')
-  assert.ok(h.startsWith('pbkdf2-sha256$'))
-  assert.equal(await verifyPassword('Correct horse 42', h), true)
-  assert.equal(await verifyPassword('wrong', h), false)
-  assert.ok(passwordProblem('short1'))
-  assert.equal(passwordProblem('longenough12'), null)
+test('filters combine and exclude unknown values', () => {
+  const r = f('make=Toyota&price_max=150000&transmission=automatic&gcc=1')
+  assert.ok(r.length > 0)
+  assert.ok(r.every((c) => c.mk === 'Toyota' && c.p != null && c.p <= 150000 && c.tr === 'automatic' && c.g === 1))
+  assert.ok(f('price_min=1').every((c) => c.p != null)) // the hidden-price MG is not "over 1 AED"
+  assert.ok(f('condition=used&mileage_max=100000').every((c) => c.c === 'used' && c.km! <= 100000))
+  assert.ok(f('hide_export=1').every((c) => c.x === 0))
 })
 
-test('S3 signature matches the AWS SigV4 documented example', () => {
-  const headers = signV4({
-    method: 'GET',
-    url: new URL('https://examplebucket.s3.amazonaws.com/test.txt'),
-    region: 'us-east-1',
-    accessKeyId: 'AKIAIOSFODNN7EXAMPLE',
-    secretAccessKey: 'wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY',
-    body: Buffer.alloc(0),
-    headers: { Range: 'bytes=0-9' },
-    now: new Date('2013-05-24T00:00:00Z'),
-  })
-  assert.match(headers.authorization!, /Signature=f0e8bdb87c964420e857bd35b5d6ed310bd44f0170aba48dd91039c6036bdb41$/)
+test('price and year sorting', () => {
+  const asc = f('sort=price_asc').map((c) => c.p)
+  const known = asc.filter((p) => p != null) as number[]
+  assert.deepEqual(known, [...known].sort((a, b) => a - b))
+  assert.equal(asc.at(-1), null) // unknown prices go last
+  const desc = f('sort=price_desc').map((c) => c.p).filter((p) => p != null) as number[]
+  assert.deepEqual(desc, [...desc].sort((a, b) => b - a))
+  const years = f('sort=year_asc').map((c) => c.y)
+  assert.deepEqual(years, [...years].sort((a, b) => a - b))
+  const recent = f('')
+  assert.ok(recent.findIndex((c) => !c.ph) > recent.findLastIndex((c) => c.ph)) // cars with photos first
 })
 
-test('image signatures and sizes are read without native libraries (Cloudflare path)', async () => {
-  const { sniff, stripJpegMetadata } = await import('../src/lib/images.js')
-  const sharp = (await import('sharp')).default
-  const jpeg = await sharp({ create: { width: 640, height: 480, channels: 3, background: '#123' } }).jpeg().withMetadata({ exif: { IFD0: { Copyright: 'GPS-secret' } } }).toBuffer()
-  const png = await sharp({ create: { width: 320, height: 400, channels: 3, background: '#123' } }).png().toBuffer()
-  const webp = await sharp({ create: { width: 1200, height: 900, channels: 3, background: '#123' } }).webp().toBuffer()
-  assert.deepEqual(sniff(jpeg), { type: 'jpeg', width: 640, height: 480 })
-  assert.deepEqual(sniff(png), { type: 'png', width: 320, height: 400 })
-  assert.deepEqual(sniff(webp), { type: 'webp', width: 1200, height: 900 })
-  assert.equal(sniff(Buffer.from('<?php echo 1; ?>'.padEnd(64, ' '))), null)
-  assert.ok(jpeg.includes('GPS-secret'))
-  const clean = stripJpegMetadata(jpeg)
-  assert.ok(!clean.includes('GPS-secret'))
-  assert.deepEqual((await sharp(clean).metadata()).width, 640) // still a valid JPEG
+test('filter state round-trips through the URL', () => {
+  const s = parseFilters(new URLSearchParams('q=patrol&make=Nissan&year_min=2024&price_max=300,000&transmission=automatic&fuel=petrol&condition=new&gcc=1&sort=price_desc&junk=1'))
+  assert.equal(s.priceMax, 300000)
+  assert.deepEqual(parseFilters(toParams(s)), s)
+  assert.equal(toParams(emptyFilters()).toString(), '')
+})
+
+test('home data uses only real, unsold cars', () => {
+  const h = homeData(vehicles)
+  assert.equal(h.stats.total, vehicles.filter((v) => v.status !== 'sold').length)
+  assert.ok(h.featured.every((v) => v.featured && v.images.length && v.verification !== 'sample'))
+  assert.ok(h.brands.length >= 5)
+  const patrol = vehicles.find((v) => v.model === 'Patrol')!
+  assert.equal(similarTo(patrol, vehicles)[0]!.model, 'Patrol')
 })

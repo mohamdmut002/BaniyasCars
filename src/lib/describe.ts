@@ -1,4 +1,4 @@
-import type { Vehicle } from '../domain/vehicle.js'
+import type { Vehicle } from '../data/types.js'
 import { colorName, vehicleTitle } from '../domain/names.js'
 import { formatNumber } from './format.js'
 

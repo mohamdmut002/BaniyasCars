@@ -29,28 +29,27 @@
   --font-sans: 'Plex Arabic', 'Segoe UI', Tahoma, system-ui, sans-serif;
   --font-display: 'Reem Kufi', 'Plex Arabic', system-ui, sans-serif;
 
-  /* Petrol: the deep teal of Gulf water and of the paint on many showroom SUVs. */
-  --color-petrol-950: #0a2226;
-  --color-petrol-900: #0f2e33;
-  --color-petrol-800: #17414a;
-  --color-petrol-700: #21545e;
-  --color-petrol-100: #dfe9e8;
-  /* Limestone ground and white paper. */
-  --color-stone: #eef1ef;
-  --color-stone-2: #e3e8e6;
+  /* Navy: the dealership's dark base. Gold: a thin accent for prices, dividers and focus. */
+  --color-navy-950: #060e1d;
+  --color-navy-900: #0b1a33;
+  --color-navy-800: #132a4d;
+  --color-navy-700: #1e3a66;
+  --color-navy-100: #dfe5ef;
+  --color-stone: #f4f5f8;
+  --color-stone-2: #e9ecf2;
   --color-paper: #ffffff;
-  --color-line: #d3dbd9;
-  --color-sage: #5c706d;
-  /* Sand: used sparingly for the price plate and focus. */
-  --color-sand: #b08a4f;
-  --color-sand-100: #f3ebdd;
-  --color-wa: #0f7a6d;
-  --color-wa-hover: #0b6559;
+  --color-line: #dce1ea;
+  --color-muted: #5d6779;
+  --color-gold: #b8975a;
+  --color-gold-600: #957640;
+  --color-gold-100: #f6f0e3;
+  --color-wa: #128a5c;
+  --color-wa-hover: #0e724c;
   --color-amber: #8a5410;
   --color-amber-100: #fbf0de;
   --color-sold: #8e2c2c;
 
-  --radius-card: 14px;
+  --radius-card: 12px;
 }
 
 @layer base {
@@ -59,11 +58,11 @@
     text-rendering: optimizeLegibility;
   }
   body {
-    @apply bg-stone text-petrol-900 font-sans antialiased;
+    @apply bg-stone text-navy-900 font-sans antialiased;
     font-feature-settings: 'kern';
   }
   :focus-visible {
-    outline: 3px solid var(--color-sand);
+    outline: 3px solid var(--color-gold);
     outline-offset: 2px;
     border-radius: 6px;
   }
@@ -72,7 +71,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
   ::selection {
-    background: var(--color-sand-100);
+    background: var(--color-gold-100);
   }
   [dir='rtl'] .num,
   .num {
@@ -95,15 +94,15 @@
     @apply mx-auto w-full max-w-[1240px] px-4 sm:px-6 lg:px-8;
   }
 
-  /* The price plate: the site's signature. Shaped like a UAE number plate: a sand code panel and a white number field. */
+  /* The price plate: the site's signature. Shaped like a UAE number plate: a gold code panel and a white number field. */
   .plate {
-    @apply inline-flex items-stretch overflow-hidden rounded-[7px] border-2 border-petrol-900 bg-paper leading-none shadow-[0_1px_0_rgba(15,46,51,0.25)];
+    @apply inline-flex items-stretch overflow-hidden rounded-[7px] border-2 border-navy-900 bg-paper leading-none shadow-[0_1px_0_rgba(11,26,51,0.25)];
   }
   .plate-code {
-    @apply flex items-center bg-sand px-2 font-display text-[0.72rem] font-bold tracking-wide text-paper;
+    @apply flex items-center bg-gold px-2 font-display text-[0.72rem] font-bold tracking-wide text-paper;
   }
   .plate-num {
-    @apply flex items-center px-2.5 py-1.5 font-display text-lg font-bold text-petrol-900;
+    @apply flex items-center px-2.5 py-1.5 font-display text-lg font-bold text-navy-900;
   }
   .plate-lg .plate-code {
     @apply px-3 text-sm;
@@ -115,33 +114,39 @@
     @apply border-line;
   }
   .plate-muted .plate-code {
-    @apply bg-sage;
+    @apply bg-muted;
   }
   .plate-muted .plate-num {
-    @apply text-sm font-semibold text-sage font-sans;
+    @apply text-sm font-semibold text-muted font-sans;
   }
 
   .btn {
     @apply inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[0.95rem] font-semibold transition-colors;
   }
   .btn-primary {
-    @apply bg-petrol-900 text-paper hover:bg-petrol-700;
+    @apply bg-navy-900 text-paper hover:bg-navy-700;
+  }
+  .btn-gold {
+    @apply bg-gold text-navy-950 hover:bg-[#c9aa70];
+  }
+  .btn-outline-light {
+    @apply border border-white/25 text-paper hover:border-gold hover:text-gold;
   }
   .btn-wa {
     @apply bg-wa text-paper hover:bg-wa-hover;
   }
   .btn-ghost {
-    @apply border border-line bg-paper text-petrol-900 hover:border-petrol-700;
+    @apply border border-line bg-paper text-navy-900 hover:border-navy-700;
   }
   .btn-sm {
     @apply min-h-9 px-4 text-sm;
   }
 
   .field {
-    @apply block w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-[0.95rem] text-petrol-900 placeholder:text-sage/70 focus:border-petrol-700 focus:outline-none;
+    @apply block w-full rounded-lg border border-line bg-paper px-3 py-2.5 text-[0.95rem] text-navy-900 placeholder:text-muted/70 focus:border-navy-700 focus:outline-none;
   }
   .label {
-    @apply mb-1.5 block text-sm font-semibold text-petrol-800;
+    @apply mb-1.5 block text-sm font-semibold text-navy-800;
   }
 
   .h-display {
@@ -149,6 +154,9 @@
   }
   .prose-ar p {
     @apply mb-3 leading-[1.95];
+  }
+  .eyebrow {
+    @apply inline-flex items-center gap-2 text-xs font-bold tracking-[0.14em] text-gold-600 before:h-px before:w-6 before:bg-gold;
   }
   .tag {
     @apply inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold;

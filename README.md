@@ -1,122 +1,97 @@
 # Baniyas Cars — معرض بني ياس للسيارات
 
-Arabic-first website and inventory dashboard for Baniyas Cars (Bani Yas Cars Est.), UAE.
+A lightweight, frontend-only website for Baniyas Cars (Bani Yas Cars Est.), UAE. Arabic first (RTL) with an English version.
+No database, no server, no accounts, no API keys: the build turns one data file into plain HTML pages that any static host can serve.
 
-- Public site in Arabic (RTL) at `/` and English at `/en`: home, searchable inventory, a page per car, contact.
-- 72 real cars from the dealership's own listings, with prices in AED, specs, 823 listing photos and a link to each original listing. See [docs/DATA-VERIFICATION.md](docs/DATA-VERIFICATION.md).
-- WhatsApp enquiry on every car with the prefilled Arabic message, a call-back form, share button.
-- Dashboard at `/admin`: add/edit/delete cars, photo upload, available/reserved/sold, featured cars, Arabic/English text, offers, enquiries, contact settings, users, CSV import/export, change history.
-- SEO: unique titles and descriptions per page and language, canonical + hreflang, Open Graph, `sitemap.xml`, `robots.txt`, `AutoDealer` and `Car` structured data (no ratings or reviews).
+## Run it
 
-## Stack
-
-| Layer | Choice |
-|---|---|
-| Server | TypeScript and [Hono](https://hono.dev) with server-rendered JSX. Runs on Node.js 20+ (`src/server.ts`) or Cloudflare Pages Functions (`src/worker.ts`) |
-| Styling | Tailwind CSS v4 (built by `scripts/build-assets.mjs`), self-hosted IBM Plex Sans Arabic + Reem Kufi (OFL) |
-| Database | PostgreSQL (Supabase, Neon, Railway or self-hosted) via [postgres.js](https://github.com/porsager/postgres); SQL migrations in `src/db/migrations` |
-| Photos | WebP 1600 px + 640 px thumbnails, location data removed. On Node, `sharp` processes uploads; on Cloudflare the dashboard resizes in the browser. Stored on local disk, an S3-compatible bucket, or an R2 binding |
-| Client JS | ~3 KB of progressive enhancement (gallery, share, auto-submit filters). Every page and filter works without JavaScript. |
-
-**Why not Next.js?** The brief preferred Next.js "if supported by the current environment". The build environment blocked the npm registry, so Next.js could not be installed, run or tested there. Hono runs anywhere Node runs, has a much smaller footprint, server-renders every page (good for SEO and Core Web Vitals) and was fully tested here against a real PostgreSQL database. Pages, data access and validation are kept in separate modules (`src/views`, `src/repo`, `src/domain`) so a later move to another framework reuses most of the code.
-
-## Project layout
-
-```
-src/
-  server.ts            Node entry: runs migrations, starts the server
-  app.tsx              Routes, static files, error and 404 handling
-  http/                public.tsx (site), admin.tsx (dashboard), seo.ts (sitemap/robots), common.ts (CSP, logging)
-  views/               layout, components, pages/ (public), admin/ (dashboard)
-  repo/                Database queries: vehicles, settings, offers, inquiries, audit
-  domain/              Vehicle types and validation (zod), Arabic names for makes/models/colours
-  lib/                 auth, images, storage (local/S3), CSV, descriptions, WhatsApp, formatting, logger
-  i18n/                Arabic and English interface text
-  client/              Browser scripts (main.ts, admin.ts)
-  styles/app.css       Design tokens and components
-  db/migrations/       SQL schema
-scripts/               seed, create-admin, build-inventory, localize-images, migrate, asset/server builds
-data/sources/          Raw captures from Instagram, Facebook and auto.ae (22 Oct 2026)
-data/inventory.json    Normalised dataset loaded by the seed
-data/inventory-verified.csv  Same data with sources and flags, for review in Excel
-tests/                 unit.test.ts and integration.test.ts
-```
-
-## Run locally
-
-Requirements: Node.js 20.11 or newer, PostgreSQL 14 or newer.
+Requirements: Node.js 20.11 or newer.
 
 ```bash
 npm install
-cp .env.example .env              # then edit DATABASE_URL and SESSION_SECRET (openssl rand -hex 32)
-createdb baniyas                  # or create the database in Supabase
-npm run db:seed                   # creates tables and loads the 72 verified cars
-npm run admin:create -- --email you@example.com --name "Your Name" --role owner
-npm run dev                       # http://localhost:3000  and  http://localhost:3000/admin
+npm run dev
 ```
 
-`admin:create` asks for the password (10+ characters with letters and digits) so it does not end up in shell history. Run it again with the same email to reset a password.
+Open **http://localhost:4173/** (English: http://localhost:4173/en/). The site rebuilds automatically when you save a file; refresh the browser to see the change.
 
-Production build and start:
+Other commands:
+
+| Command | What it does |
+|---|---|
+| `npm run build` | Builds the site into `dist/` (about 150 pages, under a second) |
+| `npm run preview` | Serves the last build from `dist/` at http://localhost:4173/ |
+| `npm test` | Type-checks and runs the tests (data checks, search, filters, sorting, WhatsApp text) |
+
+## What's on the site
+
+- **Home** — navy hero with search, selected cars, browse by brand and by price, recently added, about, contact.
+- **Cars** (`/cars/`) — all cars with live search (Arabic or English, e.g. «باترول» or "patrol"), filters (brand, model, year, price, mileage, condition, transmission, fuel, GCC specs, hide export-only) and sorting (newest, price, year, mileage). Filters are kept in the address, so a filtered list can be shared or bookmarked.
+- **Car pages** (`/cars/<slug>/`) — photo gallery with lightbox, price, specs table, plain-Arabic description written from the specs, equipment, warranty when stated, link to the original listing, similar cars, share button.
+- **WhatsApp** — every car has a button with the prefilled message
+  «السلام عليكم، استفسر عن سيارة [السيارة] موديل [السنة]، المعروضة بسعر [السعر] درهم. هل السيارة متوفرة؟»
+- **Contact** (`/contact/`), links to the official Instagram and Facebook accounts, and a custom **404** page.
+- **SEO** — page titles and descriptions in both languages, Open Graph, `AutoDealer` and `Car` structured data (no ratings or reviews), `robots.txt`; canonical links, hreflang and `sitemap.xml` when `SITE_URL` is set (see Deploy).
+
+## Where things are
+
+```
+src/data/vehicles.ts   ← the inventory: edit this file to add, sell or reprice cars
+src/data/types.ts      fields a car can have, and their defaults
+src/config/site.ts     ← WhatsApp, phone, email, hours, branches, social links, site address
+src/i18n/index.ts      Arabic and English interface text
+src/views/             page templates (home, inventory, car, contact, 404) and shared components
+src/styles/app.css     colours (navy / white / gold), fonts and components (Tailwind CSS)
+src/client/main.ts     browser script: search, filters, sorting, gallery, share
+src/lib/               search/filter logic, descriptions, formatting, WhatsApp links
+scripts/               build.ts (static build), dev.mjs (watch + serve), serve.mjs (preview server)
+public/                fonts, favicon, sharing image — copied as-is into the build
+data/sources/          raw captures of the dealership's listings (22 Oct 2026), for reference
+docs/DATA-VERIFICATION.md  where every car came from, and what still needs confirming
+```
+
+## Updating the inventory
+
+Everything is in **`src/data/vehicles.ts`**. Each car is one `defineVehicle({ ... })` block; only `slug`, `make`, `model` and `year` are required.
+
+- **Unknown details:** leave the field out. The site shows «غير متوفر». No price → «يرجى التواصل للاستفسار».
+- **Price change:** edit `price_aed`, and set `last_verified_at` to today's date.
+- **Sold:** `status: 'sold'` (the card leaves the list; the car's page still opens with a "sold" notice so shared links keep working). **Reserved:** `status: 'reserved'`.
+- **New car:** copy a block, give it a unique `slug` (lowercase letters, digits and dashes, e.g. `toyota-land-cruiser-gxr-2026-ig-abc123`), and fill in only what the listing states. Put the listing link in `source_url`.
+- **Photos:** full URLs, or put the files in `public/photos/` and write `images: ['/photos/patrol-1.jpg', '/photos/patrol-2.jpg']`. The first photo is the cover.
+- **Homepage "selected cars":** `featured: true` (needs at least one photo).
+- **Needs checking:** `verification: 'needs_confirmation'` shows «تأكد من التوفر»; add the reason in `verification_note`.
+- **Sample/test cars:** only with `verification: 'sample'` — they are labelled «مثال توضيحي — ليست سيارة معروضة» and kept out of the home page and sitemap.
+
+The build stops with a clear message if an entry is invalid (duplicate slug, bad year, negative price, photo path not starting with `/` or `http`).
+
+## Contact details and WhatsApp
+
+Edit **`src/config/site.ts`**. The WhatsApp number (+971 50 442 2050) is the one the dealership publishes in its Instagram posts; set `whatsapp: null` to hide all WhatsApp buttons — they are then replaced by a link to the contact page. Every other value can also be set to `null` to hide it.
+
+## Inventory data
+
+The 72 cars are the dealership's own listings captured on 22 October 2026: 66 from its two verified auto.ae showroom pages (Abu Dhabi and Dubai) and 6 from recent posts on the official Instagram account. 10 are marked as needing confirmation (old listings or conflicting details). Nothing was invented; see `docs/DATA-VERIFICATION.md`.
+
+Instagram and Facebook do not allow automatic reading of a business account's posts without the dealership's own Meta API access, so the inventory is updated by hand in `src/data/vehicles.ts`.
+
+Listing photos load from auto.ae's image store. If a listing is removed there, its photos may stop loading; to avoid that, download the photos you want to keep into `public/photos/` and update the URLs.
+
+## Deploy as a static site
+
+Build with your real address so canonical links and the sitemap are correct:
 
 ```bash
-npm run build      # Tailwind + client JS, type-check, server bundle in dist/
-npm start          # node dist/server.js (applies pending migrations on boot)
+SITE_URL=https://your-domain.ae npm run build
 ```
 
-## Tests
+(Or set `url` in `src/config/site.ts`.) Then publish the **`dist/`** folder:
 
-```bash
-npm test                                              # unit tests
-TEST_DATABASE_URL=postgres://…/baniyas_test npm test  # + integration tests against a real database (it is wiped)
-```
+- **Cloudflare Pages:** Create → Pages → Connect to Git. Build command `npm run build`, output directory `dist`, environment variables `SITE_URL=https://your-domain` and `NODE_VERSION=22`. Or upload `dist/` with `npx wrangler pages deploy dist`.
+- **Netlify:** build command `npm run build`, publish directory `dist`, plus `SITE_URL`.
+- **GitHub Pages / any web server:** upload the contents of `dist/`.
 
-See [docs/TEST-REPORT.md](docs/TEST-REPORT.md) for what was run and what is still unverified.
+`dist/404.html` is used automatically for missing pages on Cloudflare Pages, Netlify and GitHub Pages. `dist/_headers` adds basic security headers and long caching for CSS, JS and fonts on Cloudflare Pages and Netlify.
 
-## Deploy (low cost)
+## Stack
 
-**Cloudflare Pages:** follow [docs/DEPLOY-CLOUDFLARE.md](docs/DEPLOY-CLOUDFLARE.md) (`npm run build:pages` / `npm run deploy:pages`, PostgreSQL through Hyperdrive, photos in R2).
-
-**Any Node host:** for example **Render** (web service) + **Supabase** (PostgreSQL + photo storage):
-
-1. **Supabase**: create a project in a nearby region. Copy the *Session pooler* connection string (port 5432). In Storage, create a **public** bucket named `vehicles`, then create S3 access keys (Project Settings → Storage).
-2. **Load data** from your computer once: set `DATABASE_URL` (and `DATABASE_SSL=require`) in `.env`, then `npm run db:seed` and `npm run admin:create -- --email … --role owner`.
-3. **Render**: push this folder to a GitHub repository, then *New → Blueprint* and pick the repo (`render.yaml` is included). Fill the secret variables: `SITE_URL` (your domain), `DATABASE_URL`, and the `S3_*` values shown in `.env.example`.
-4. **Photos**: after the first deploy, run `npm run images:localize` (locally with the production `.env`, or from Render's shell). It copies the 823 listing photos from auto.ae into your bucket so the site no longer depends on auto.ae.
-5. **Domain**: add your domain in Render, set `SITE_URL` to it, and submit `https://your-domain/sitemap.xml` in Google Search Console.
-
-Render's free plan sleeps after inactivity (first visit takes ~30 s). For a real dealership, the Starter plan (always on) is worth it. A `Dockerfile` is included for Railway, Fly.io or any VPS; on a VPS you can keep `STORAGE_DRIVER=local` with a persistent `storage/` folder.
-
-## Managing cars (for the dealership team)
-
-Everything below is done in `/admin`; no code changes needed. The public site updates immediately (pages are cached for at most 60 seconds by a CDN, if you add one).
-
-- **Add a car**: السيارات → إضافة سيارة. Fill what you know; leave anything unconfirmed empty and the site shows «غير متوفر». Save, then upload photos (several at once; first photo is the cover; "رئيسية" makes another photo the cover).
-- **Change price or details**: open the car, edit, save. Descriptions are written automatically from the specs and update with the price; type your own text in the description fields only if you want to override it.
-- **Reserved / sold**: change the status from the list. Sold cars leave the listing, but their page still opens (with a "sold" notice) so shared links don't break. Prefer "sold" over deleting.
-- **Homepage**: tick «اعرضها في سيارات مختارة» (needs at least one photo); the rank number sets the order.
-- **Offers**: العروض. The homepage offers section appears only when an offer is active and not expired.
-- **Contact details, branches, social links**: بيانات التواصل (owner only). The WhatsApp number here drives every WhatsApp button on the site.
-- **Enquiries**: طلبات الاتصال lists call-back requests with a WhatsApp reply button.
-- **Bulk updates**: استيراد وتصدير. Download the inventory as CSV, edit in Excel, upload, review the preview, then apply. Rows are matched by `source_key`: matching cars are updated (empty cells keep the current value), new rows are added, likely duplicates without a `source_key` are skipped, nothing is deleted. Lists (features, image URLs) are separated with `|`.
-
-## Keeping inventory in sync with Instagram, Facebook and auto.ae
-
-Instagram and Facebook do not allow automated reading of a business account's posts without the official Meta Graph API (a Facebook app, business verification and a long-lived token), and auto.ae offers no public API. The site therefore **does not claim automatic synchronisation**. The working process is:
-
-1. **Day to day**: when a car is posted on Instagram, add it in the dashboard (or update its price/status). Paste the post link in «رابط الإعلان الأصلي» so the site links to it.
-2. **Bulk refresh**: export the CSV, update it, import it. The `source_key` column (e.g. `auto.ae:275740`, `instagram:DerZSlriL1W`) prevents duplicates.
-3. **Re-running the original capture**: update the files in `data/sources/`, run `npm run inventory:build` then `npm run db:seed`. The seed updates facts for known listings, adds new ones, and never deletes cars or overwrites status, featured flags, descriptions or verification set in the dashboard.
-4. **Stale listings**: cars listed more than 90 days before a check are flagged «بحاجة لتأكيد» with a visible "confirm availability" notice; nothing is removed automatically.
-
-If the dealership later wants Instagram posts to appear automatically, the next step is a Meta Graph API integration (Instagram Business account linked to the Facebook page) that drafts new cars for staff approval. That needs credentials only the dealership can create.
-
-## Security notes
-
-- Passwords: PBKDF2-SHA256 (100,000 iterations, Web Crypto); 5 failed attempts lock an account for 15 minutes; per-IP login rate limit.
-- Sessions: random 256-bit token in an HttpOnly, SameSite=Lax (Secure in production) cookie; only a SHA-256 hash is stored. Password change signs out other devices.
-- Every dashboard POST needs a per-session CSRF token and a same-origin `Origin`/`Referer`.
-- Roles: owner (everything) and staff (cars, offers, enquiries, import/export).
-- Uploads are decoded by sharp (file names and MIME types are not trusted), re-encoded to WebP and stripped of metadata; size limits per request.
-- CSP with per-request nonces, `frame-ancestors 'none'`, HSTS in production, no secrets in client code. CSV export neutralises spreadsheet formulas.
-- All changes in the dashboard are written to an audit log shown on the dashboard home.
+TypeScript, a ~60-line JSX-to-HTML renderer (`src/jsx/`) used only at build time, Tailwind CSS v4, esbuild for the ~14 KB browser script, and self-hosted IBM Plex Sans Arabic and Reem Kufi fonts (SIL Open Font License, in `public/fonts/`). The site itself has **no runtime dependencies**; `npm install` only fetches the build tools listed under `devDependencies`.
